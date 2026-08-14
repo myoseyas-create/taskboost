@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TaskBoost</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#0b1020;color:#fff}
+header{padding:22px 6%;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #202942}
+.logo{font-size:28px;font-weight:800;color:#6ea8ff}.logo span{color:#a970ff}
+nav button{background:none;border:0;color:#b9c2d8;margin:4px;cursor:pointer;font-size:14px}
+main{max-width:1100px;margin:auto;padding:28px 18px}.hero{padding:24px 0}
+h1{font-size:42px;margin:5px 0}.subtitle{color:#aab4cc}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}
+.card{background:#141b30;border:1px solid #273250;border-radius:18px;padding:20px;box-shadow:0 8px 25px #0003}
+.stat{font-size:30px;font-weight:800;margin-top:8px}.label{color:#9da8c2;font-size:14px}
+.progress{height:12px;background:#29334e;border-radius:20px;overflow:hidden;margin:12px 0}.bar{height:100%;background:linear-gradient(90deg,#4e9cff,#a76cff);width:0%;transition:.3s}
+button.primary{background:linear-gradient(90deg,#4e9cff,#8f62ff);border:0;color:white;padding:11px 16px;border-radius:10px;font-weight:700;cursor:pointer}
+input,select{width:100%;padding:12px;border-radius:10px;border:1px solid #33405f;background:#0e1527;color:#fff;margin:7px 0}
+.task{display:flex;justify-content:space-between;align-items:center;padding:13px 0;border-bottom:1px solid #28324b}.task:last-child{border:0}
+.done{text-decoration:line-through;color:#77819a}.xp{color:#70b0ff;font-weight:700}.hidden{display:none}
+.reward{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:10px 0;padding:14px;background:#0f1629;border-radius:12px}
+.small{font-size:13px;color:#9da8c2}.danger{color:#ff7c91;cursor:pointer}
+section{display:none}section.active{display:block}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Task<span>Boost</span> 🚀</div>
+  <nav>
+    <button onclick="show('dashboard')">Accueil</button>
+    <button onclick="show('tasks')">Tâches</button>
+    <button onclick="show('goals')">Objectifs</button>
+    <button onclick="show('rewards')">Récompenses</button>
+  </nav>
+</header>
+
+<main>
+<section id="dashboard" class="active">
+<div class="hero"><h1>Boost ta journée 🚀</h1><p class="subtitle">Transforme tes tâches en XP et progresse niveau après niveau.</p></div>
+<div class="grid">
+<div class="card"><div class="label">Niveau</div><div class="stat" id="level">1</div></div>
+<div class="card"><div class="label">XP total</div><div class="stat" id="totalXp">0</div></div>
+<div class="card"><div class="label">Tâches terminées</div><div class="stat" id="completed">0</div></div>
+<div class="card"><div class="label">Objectifs</div><div class="stat" id="goalCount">0</div></div><div class="card"><div class="label">Série 🔥</div><div class="stat" id="streak">0</div><div class="small">jours consécutifs</div></div><div class="card"><div class="label">Badges 🏆</div><div class="stat" id="badgeCount">0</div></div>
+</div>
+<div class="card" style="margin-top:16px">
+<h2>Progression</h2><div id="progressText">0 / 100 XP</div><div class="progress"><div class="bar" id="bar"></div></div>
+<p class="small">Termine des tâches pour gagner de l'XP.</p>
+</div>
+<div class="card" style="margin-top:16px"><h2>Défi du jour 🎯</h2><p id="dailyChallenge"></p><div class="progress"><div class="bar" id="dailyBar"></div></div><p class="small" id="dailyProgress"></p></div><div class="card" style="margin-top:16px"><h2>Dernières tâches</h2><div id="dashTasks"></div></div><div class="card" style="margin-top:16px"><h2>Mes badges 🏆</h2><div id="badges"></div></div>
+</section>
+
+<section id="tasks">
+<h1>Mes tâches ✅</h1><div class="card">
+<input id="taskName" placeholder="Ex : Faire 20 minutes de maths">
+<select id="taskXp"><option value="20">Petite tâche — 20 XP</option><option value="40">Tâche moyenne — 40 XP</option><option value="70">Grande tâche — 70 XP</option></select>
+<button class="primary" onclick="addTask()">Ajouter la tâche</button>
+</div>
+<div class="card" style="margin-top:16px"><div id="taskList"></div></div>
+</section>
+
+<section id="goals">
+<h1>Mes objectifs 🎯</h1><div class="card">
+<input id="goalName" placeholder="Ex : Améliorer mes notes en maths">
+<input id="goalDate" type="date">
+<button class="primary" onclick="addGoal()">Ajouter l'objectif</button>
+</div>
+<div class="card" style="margin-top:16px"><div id="goalList"></div></div>
+</section>
+
+<section id="rewards">
+<h1>Mes récompenses 🏆</h1>
+<div class="card">
+<input id="rewardName" placeholder="Ex : 30 minutes de jeu">
+<input id="rewardCost" type="number" min="1" placeholder="Coût en XP">
+<button class="primary" onclick="addReward()">Ajouter la récompense</button>
+</div>
+<div class="card" style="margin-top:16px"><div id="rewardList"></div></div>
+</section>
+</main>
+
+<script>
+const defaultData={xp:0,tasks:[],goals:[],rewards:[],streak:0,lastCompletedDay:'',badges:[],dailyDone:0,dailyDate:''};
+let data={...defaultData,...JSON.parse(localStorage.getItem('taskboost')||'{}')};
+function save(){localStorage.setItem('taskboost',JSON.stringify(data));render();}
+function show(id){document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');render();}
+function levelInfo(){let level=1,needed=100;while(data.xp>=needed){level++;needed+=150+(level-2)*50}let previous=level===1?0:needed-(150+(level-2)*50);return{level,needed,previous};}
+function addTask(){let n=document.getElementById('taskName').value.trim();let x=+document.getElementById('taskXp').value;if(!n)return;data.tasks.unshift({id:Date.now(),name:n,xp:x,done:false});document.getElementById('taskName').value='';save();}
+function todayKey(){return new Date().toISOString().slice(0,10);}
+function yesterdayKey(){let d=new Date();d.setDate(d.getDate()-1);return d.toISOString().slice(0,10);}
+function updateDaily(){const today=todayKey();if(data.dailyDate!==today){data.dailyDate=today;data.dailyDone=0;}}
+function awardBadge(name){if(!data.badges.includes(name)){data.badges.push(name);return true;}return false;}
+function completeTask(id){
+let t=data.tasks.find(x=>x.id===id);
+if(t&&!t.done){
+updateDaily();t.done=true;data.xp+=t.xp;data.dailyDone++;
+const today=todayKey();
+if(data.lastCompletedDay!==today){data.streak=data.lastCompletedDay===yesterdayKey()?data.streak+1:1;data.lastCompletedDay=today;}
+let unlocked=[];
+if(data.streak>=3&&awardBadge('🔥 3 jours'))unlocked.push('🔥 3 jours');
+if(data.streak>=7&&awardBadge('🏆 7 jours'))unlocked.push('🏆 7 jours');
+if(data.dailyDone>=3&&awardBadge('🎯 Défi quotidien'))unlocked.push('🎯 Défi quotidien');
+if(data.tasks.filter(x=>x.done).length>=10&&awardBadge('⭐ 10 tâches'))unlocked.push('⭐ 10 tâches');
+save();
+alert('🎉 +'+t.xp+' XP !'+(unlocked.length?'\\n\\n🏆 Badge débloqué : '+unlocked.join(', '):''));
+}}
+function deleteTask(id){data.tasks=data.tasks.filter(x=>x.id!==id);save();}
+function addGoal(){let n=document.getElementById('goalName').value.trim();if(!n)return;data.goals.push({id:Date.now(),name:n,date:document.getElementById('goalDate').value,done:false});document.getElementById('goalName').value='';save();}
+function toggleGoal(id){let g=data.goals.find(x=>x.id===id);if(g)g.done=!g.done;save();}
+function deleteGoal(id){data.goals=data.goals.filter(x=>x.id!==id);save();}
+function addReward(){let n=document.getElementById('rewardName').value.trim(),c=+document.getElementById('rewardCost').value;if(!n||!c)return;data.rewards.push({id:Date.now(),name:n,cost:c});document.getElementById('rewardName').value='';document.getElementById('rewardCost').value='';save();}
+function claimReward(id){let r=data.rewards.find(x=>x.id===id);if(data.xp<r.cost)return alert('❌ Pas assez d’XP.');data.xp-=r.cost;save();alert('🏆 Récompense débloquée : '+r.name);}
+function render(){
+let li=levelInfo(), pct=Math.min(100,((data.xp-li.previous)/(li.needed-li.previous))*100);
+updateDaily();document.getElementById('level').textContent=li.level;document.getElementById('totalXp').textContent=data.xp;
+document.getElementById('completed').textContent=data.tasks.filter(t=>t.done).length;document.getElementById('goalCount').textContent=data.goals.length;document.getElementById('streak').textContent=data.streak;document.getElementById('badgeCount').textContent=data.badges.length;
+document.getElementById('progressText').textContent=data.xp+' / '+li.needed+' XP';document.getElementById('bar').style.width=pct+'%';document.getElementById('dailyChallenge').textContent='Termine 3 tâches aujourd’hui pour débloquer le badge 🎯';document.getElementById('dailyProgress').textContent=data.dailyDone+' / 3 tâches terminées';document.getElementById('dailyBar').style.width=Math.min(100,(data.dailyDone/3)*100)+'%';document.getElementById('badges').innerHTML=data.badges.length?data.badges.map(b=>`<span style="display:inline-block;background:#0f1629;border:1px solid #33405f;border-radius:999px;padding:9px 13px;margin:5px">${b}</span>`).join(''):'<p class="small">Aucun badge pour le moment. Commence ton défi !</p>';
+document.getElementById('taskList').innerHTML=data.tasks.length?data.tasks.map(t=>`<div class="task"><div class="${t.done?'done':''}">${t.name}<br><span class="xp">+${t.xp} XP</span></div><div>${t.done?'✅':'<button class="primary" onclick="completeTask('+t.id+')">Terminer</button>'} <span class="danger" onclick="deleteTask(${t.id})">✕</span></div></div>`).join(''):'<p class="small">Aucune tâche pour le moment.</p>';
+document.getElementById('dashTasks').innerHTML=data.tasks.slice(0,5).map(t=>`<div class="task"><span class="${t.done?'done':''}">${t.name}</span><span>${t.done?'✅':'⏳'}</span></div>`).join('')||'<p class="small">Ajoute ta première tâche.</p>';
+document.getElementById('goalList').innerHTML=data.goals.map(g=>`<div class="task"><div class="${g.done?'done':''}">${g.name}<br><span class="small">${g.date?'Date limite : '+g.date:''}</span></div><div><button class="primary" onclick="toggleGoal(${g.id})">${g.done?'Annuler':'Terminé'}</button> <span class="danger" onclick="deleteGoal(${g.id})">✕</span></div></div>`).join('')||'<p class="small">Aucun objectif.</p>';
+document.getElementById('rewardList').innerHTML=data.rewards.map(r=>`<div class="reward"><div><b>${r.name}</b><br><span class="xp">${r.cost} XP</span></div><button class="primary" onclick="claimReward(${r.id})">Échanger</button></div>`).join('')||'<p class="small">Crée ta première récompense.</p>';
+}
+render();
+</script>
+</body>
+</html>
